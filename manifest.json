@@ -1,0 +1,13 @@
+{
+  "name": "Interview Helper",
+  "version": "1.0.2",
+  "manifest_version": 3,
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["./index.js"],
+      "css": ["./index.css"]
+    }
+  ],
+  "permissions": ["storage"]
+}
