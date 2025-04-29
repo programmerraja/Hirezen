@@ -1,14 +1,22 @@
-import OpenAI from "openai";
+import { generateObject } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { z } from "zod";
 
 export interface InterviewQuestion {
   question: string;
+  code?: string;
   notes?: string;
 }
 
-const openai = new OpenAI({
+// const openai = new OpenAI({
+//   baseURL: "https://models.inference.ai.azure.com",
+//   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//   dangerouslyAllowBrowser: true,
+// });
+
+const openai = createOpenAI({
   baseURL: "https://models.inference.ai.azure.com",
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true,
 });
 
 export async function generateInterviewQuestions(
@@ -33,34 +41,26 @@ export async function generateInterviewQuestions(
 
       ${otherNotes ? `Additional notes: ${otherNotes}` : ""}
 
-      Format the response as a JSON array of objects with a 'question' property.
-      Example: [{"question": "What is..."}, ...]
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert technical interviewer. Your task is to generate relevant interview questions based on a candidate's resume and the role they're applying for.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
+    const response = await generateObject({
+      model: openai("gpt-4o", { structuredOutputs: true }),
+      schemaName: "interviewQuestions",
+      schemaDescription:
+        "A list of 10 question if the question is code based include code property else ingore",
+      schema: z.object({
+        questions: z.array(
+          z.object({
+            question: z.string(),
+            code: z.string(),
+          })
+        ),
+      }),
+      prompt: prompt,
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content in response");
-    }
-
-    const parsedContent = JSON.parse(content);
-    return parsedContent.questions || [];
+    console.log("Content:", response);
+    return response.object.questions || [];
   } catch (error) {
     console.error("Error calling OpenAI:", error);
     throw new Error("Failed to generate interview questions");

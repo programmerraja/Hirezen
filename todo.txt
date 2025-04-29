@@ -1,0 +1,4 @@
+-[] Build a landing page and optio to download the extension
+-[] After parsing the resume give something about canditate
+-[] ALlow user to control the prompt create a new setting page etc 
+-[] when adding question have optio to ask chatGpt 

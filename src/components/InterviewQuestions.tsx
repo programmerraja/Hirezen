@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { CodeBlock } from "@/components/ui/code-block";
 import { InterviewQuestion } from "@/utils/openai";
 import { ArrowLeft, Plus, Edit, X, Check, X as XIcon } from "lucide-react";
 import { useInterview } from "@/contexts/InterviewContext";
@@ -116,105 +117,116 @@ export function InterviewQuestions() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex flex-col gap-6 p-4">
-          {questionsList.map((q: InterviewQuestion, index: number) => (
-            <div
-              key={index}
-              className="border rounded-lg p-4 shadow-sm hover:border-border/80 transition-all"
-            >
-              {editingIndex === index ? (
-                <div className="flex flex-col mb-4" ref={editRef}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <Label
-                        htmlFor={`edit-question-${index}`}
-                        className="block text-xs font-medium mb-1"
-                      >
-                        Question
-                      </Label>
-                      <Textarea
-                        id={`edit-question-${index}`}
-                        value={editedQuestion.question}
-                        onChange={(e) =>
-                          setEditedQuestion({
-                            ...editedQuestion,
-                            question: e.target.value,
-                          })
-                        }
-                        className="w-full min-h-[80px] text-sm transition-all focus:border-primary"
-                        autoFocus
-                        placeholder="Enter your question here..."
-                      />
-                    </div>
-                    <Button
-                      onClick={() => handleSaveQuestion(index)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      title="Close and Save"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <p className="text-md font-medium pr-2">{q.question}</p>
-                    </div>
-                    <div className="flex items-center space-x-1">
+        <div className="flex flex-col gap-6 p-4 w-full max-w-[490px]">
+          {questionsList &&
+            questionsList.map((q: InterviewQuestion, index: number) => (
+              <div
+                key={index}
+                className="border rounded-lg p-4 shadow-sm hover:border-border/80 transition-all w-full"
+              >
+                {editingIndex === index ? (
+                  <div className="flex flex-col mb-4" ref={editRef}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 w-full">
+                        <Label
+                          htmlFor={`edit-question-${index}`}
+                          className="block text-xs font-medium mb-1"
+                        >
+                          Question
+                        </Label>
+                        {editedQuestion.code && (
+                          <div className="mb-3">
+                            <Label className="block text-xs font-medium mb-1">
+                              Code
+                            </Label>
+                            <CodeBlock code={editedQuestion.code} />
+                          </div>
+                        )}
+                        <Textarea
+                          id={`edit-question-${index}`}
+                          value={editedQuestion.question}
+                          onChange={(e) =>
+                            setEditedQuestion({
+                              ...editedQuestion,
+                              question: e.target.value,
+                            })
+                          }
+                          className="w-full min-h-[80px] text-sm transition-all focus:border-primary"
+                          autoFocus
+                          placeholder="Enter your question here..."
+                        />
+                      </div>
                       <Button
-                        onClick={() => handleEditQuestion(index)}
+                        onClick={() => handleSaveQuestion(index)}
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
-                        title="Edit Question"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        onClick={() => handleRemoveQuestion(index)}
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        title="Remove Question"
+                        title="Close and Save"
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="flex flex-col mb-4">
+                     <div className="flex items-end justify-end space-x-1 mb-3 ">
+                        <Button
+                          onClick={() => handleEditQuestion(index)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 "
+                          title="Edit Question"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          onClick={() => handleRemoveQuestion(index)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          title="Remove Question"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 w-full overflow-hidden">
+                        <p className="text-md font-medium pr-2">{q.question}</p>
+                        <div className="w-full overflow-hidden">{q.code && <CodeBlock code={q.code} />}</div>
+                      </div>
+                     
+                    </div>
+                  </div>
+                )}
 
-              <div className="mb-3 space-y-1">
-                <Label
-                  htmlFor={`notes-${index}`}
-                  className="block text-xs font-medium"
-                >
-                  Notes/Feedback
-                </Label>
-                <Textarea
-                  id={`notes-${index}`}
-                  value={q.notes || ""}
-                  onChange={(e) => {
-                    const updatedQuestions = [...questionsList];
-                    updatedQuestions[index] = {
-                      ...updatedQuestions[index],
-                      notes: e.target.value,
-                    };
-                    setQuestionsList(updatedQuestions);
-                  }}
-                  className="w-full min-h-[60px] text-sm transition-all focus:border-primary"
-                  placeholder="Add notes about the candidate's response..."
-                />
+                <div className="mb-3 space-y-1">
+                  <Label
+                    htmlFor={`notes-${index}`}
+                    className="block text-xs font-medium"
+                  >
+                    Notes/Feedback
+                  </Label>
+                  <Textarea
+                    id={`notes-${index}`}
+                    value={q.notes || ""}
+                    onChange={(e) => {
+                      const updatedQuestions = [...questionsList];
+                      updatedQuestions[index] = {
+                        ...updatedQuestions[index],
+                        notes: e.target.value,
+                      };
+                      setQuestionsList(updatedQuestions);
+                    }}
+                    className="w-full min-h-[60px] text-sm transition-all focus:border-primary"
+                    placeholder="Add notes about the candidate's response..."
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
           <Separator className="my-1" />
 
-          <div className="mt-1 border rounded-lg p-4 shadow-sm hover:border-border/80 transition-all bg-accent/5">
+          <div className="mt-1 border rounded-lg p-4 shadow-sm hover:border-border/80 transition-all bg-accent/5 w-full">
             <div className="flex flex-col mb-4">
               <h3 className="text-lg font-semibold mb-2">Final Feedback</h3>
               <p className="text-sm text-muted-foreground mb-4">

@@ -1,4 +1,3 @@
-"use client";
 import { useEffect } from "react";
 import { Header } from "@/components/header";
 import { CandidateForm } from "@/components/CandidateForm";
@@ -35,7 +34,6 @@ function AppContent() {
       document.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
-
 
   return (
     <div className="flex flex-col min-h-screen bg-background w-full overflow-hidden">

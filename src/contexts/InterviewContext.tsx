@@ -6,18 +6,13 @@ import React, {
   ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { InterviewQuestion } from "@/utils/openai";
+import { generateInterviewQuestions, InterviewQuestion } from "@/utils/openai";
 import { processPDF } from "@/utils/pdfUtils";
-import { generateInterviewQuestions } from "@/utils/openai";
 import {
   saveCurrentInterview,
   loadCurrentInterview,
 } from "@/utils/localStorage";
-import {
-  generateInterviewPDFDirect,
-  PrintData,
-} from "@/utils/pdfGeneratorDirect";
-import { generateInterviewPDF } from "@/utils/pdfGenerator";
+import { generatePDF, PrintData } from "@/utils/pdfUtils";
 
 export type SelectionStatus = "Selected" | "Rejected" | "";
 
@@ -163,7 +158,7 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
         questions: interviewData.questions,
       };
 
-      await generateInterviewPDF(printData);
+      await generatePDF(printData);
       toast.success("PDF generated successfully");
     } catch (error) {
       console.error("Error generating PDF:", error);

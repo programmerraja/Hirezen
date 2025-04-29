@@ -1,41 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { defineConfig, Plugin } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
-import fs from 'fs';
-
-// Custom plugin to handle PDF.js worker
-const pdfWorkerPlugin = (): Plugin => {
-  return {
-    name: 'pdf-worker-plugin',
-    generateBundle(_outputOptions, _bundle) {
-      // Check if the worker file exists in node_modules
-      const workerPath = path.resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.mjs');
-      if (fs.existsSync(workerPath)) {
-        // Read the worker file
-        const workerCode = fs.readFileSync(workerPath, 'utf-8');
-
-        // Convert ESM to IIFE format
-        const iifePdfWorker = `
-          (function() {
-            ${workerCode.replace(/import\.meta/g, '({})').replace(/export /g, 'var ')}
-          })();
-        `;
-
-        // Add the worker file to the bundle
-        this.emitFile({
-          type: 'asset',
-          fileName: 'pdf.worker.js',
-          source: iifePdfWorker
-        });
-      }
-    }
-  };
-};
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), pdfWorkerPlugin()],
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: "dist",
     emptyOutDir: true,
