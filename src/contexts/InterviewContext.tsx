@@ -6,7 +6,13 @@ import React, {
   ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { generateInterviewQuestions, InterviewQuestion } from "@/utils/openai";
+import {
+  generateInterviewQuestions,
+  InterviewQuestion,
+  extractCandidateInfo,
+  CandidateInfo,
+  regenerateQuestion,
+} from "@/utils/openai";
 import { processPDF } from "@/utils/pdfUtils";
 import {
   saveCurrentInterview,
@@ -26,6 +32,7 @@ export interface InterviewData {
   questions: InterviewQuestion[];
   selectionStatus: SelectionStatus;
   finalFeedback: string;
+  candidateInfo?: CandidateInfo;
 }
 
 interface InterviewContextType {
@@ -35,6 +42,10 @@ interface InterviewContextType {
   updateInterviewData: (data: Partial<InterviewData>) => void;
   setPage: (page: number) => void;
   generateQuestions: () => Promise<void>;
+  regenerateQuestionById: (
+    index: number,
+    customPrompt?: string
+  ) => Promise<void>;
   startNewInterview: () => void;
   handlePrint: () => Promise<void>;
 }
@@ -49,6 +60,7 @@ const defaultInterviewData: InterviewData = {
   questions: [],
   selectionStatus: "",
   finalFeedback: "",
+  candidateInfo: undefined,
 };
 
 const InterviewContext = createContext<InterviewContextType | undefined>(
@@ -76,6 +88,7 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
         questions: currentInterview.questions || [],
         selectionStatus: currentInterview.selectionStatus || "",
         finalFeedback: currentInterview.finalFeedback || "",
+        candidateInfo: currentInterview.candidateInfo,
       });
 
       if (currentInterview.questions && currentInterview.questions.length > 0) {
@@ -98,6 +111,7 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
         questions: interviewData.questions,
         selectionStatus: interviewData.selectionStatus,
         finalFeedback: interviewData.finalFeedback,
+        candidateInfo: interviewData.candidateInfo,
       });
     }
   }, [interviewData]);
@@ -115,18 +129,39 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       const processedText = await processPDF(interviewData.resumeFile);
-      const generatedQuestionsArray = await generateInterviewQuestions(
+
+      // Extract candidate information
+      const candidateInfoPromise = extractCandidateInfo(
+        processedText,
+        interviewData.role
+      );
+
+      // Generate interview questions
+      const questionsPromise = generateInterviewQuestions(
         processedText,
         interviewData.role,
         interviewData.otherNotes
       );
 
-      updateInterviewData({ questions: generatedQuestionsArray });
+      const [candidateInfo, generatedQuestionsArray] = await Promise.all([
+        candidateInfoPromise,
+        questionsPromise,
+      ]);
+
+      // Update the interview data with both results
+      updateInterviewData({
+        questions: generatedQuestionsArray,
+        candidateInfo: candidateInfo,
+      });
+
       setPage(2);
     } catch (error) {
-      console.error("Error generating questions:", error);
+      console.error(
+        "Error generating questions or extracting candidate info:",
+        error
+      );
       toast.error(
-        "Failed to generate questions. Please check your OpenAI API key and try again."
+        "Failed to process resume. Please check your OpenAI API key and try again."
       );
     } finally {
       setIsLoading(false);
@@ -137,6 +172,43 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
     setInterviewData(defaultInterviewData);
     localStorage.removeItem("currentInterview");
     setPage(1);
+  };
+
+  const regenerateQuestionById = async (
+    index: number,
+    customPrompt?: string
+  ) => {
+    try {
+      setIsLoading(true);
+
+      // Get the current question
+      const currentQuestion = interviewData.questions[index];
+      if (!currentQuestion) {
+        toast.error("Question not found");
+        return;
+      }
+
+      const newQuestion = await regenerateQuestion(
+        currentQuestion,
+        interviewData.role,
+        customPrompt
+      );
+
+      const updatedQuestions = [...interviewData.questions];
+      updatedQuestions[index] = {
+        ...newQuestion,
+        notes: currentQuestion.notes, // Preserve any existing notes
+      };
+
+      updateInterviewData({ questions: updatedQuestions });
+
+      toast.success("Question regenerated successfully");
+    } catch (error) {
+      console.error("Error regenerating question:", error);
+      toast.error("Failed to regenerate question");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePrint = async () => {
@@ -156,6 +228,7 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
         selectionStatus: interviewData.selectionStatus,
         finalFeedback: interviewData.finalFeedback,
         questions: interviewData.questions,
+        candidateInfo: interviewData.candidateInfo,
       };
 
       await generatePDF(printData);
@@ -175,6 +248,7 @@ export const InterviewProvider: React.FC<{ children: ReactNode }> = ({
         updateInterviewData,
         setPage,
         generateQuestions,
+        regenerateQuestionById,
         startNewInterview,
         handlePrint,
       }}

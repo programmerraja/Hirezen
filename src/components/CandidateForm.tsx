@@ -10,17 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileUp, Loader2, ArrowRight } from "lucide-react";
+import { FileUp, Loader2 } from "lucide-react";
 import { useInterview } from "@/contexts/InterviewContext";
 
 export function CandidateForm() {
-  const {
-    interviewData,
-    updateInterviewData,
-    isLoading,
-    generateQuestions,
-    setPage,
-  } = useInterview();
+  const { interviewData, updateInterviewData, isLoading, generateQuestions } =
+    useInterview();
 
   const { interviewerName, candidateName, role, resumePreview, otherNotes } =
     interviewData;
@@ -35,8 +30,6 @@ export function CandidateForm() {
     }
   };
 
-  const goToQuestions = () => setPage(2);
-
   return (
     <Card className="w-full shadow-sm rounded-lg overflow-hidden border-border/40 transition-all hover:border-border/80 pd-0">
       <CardHeader className="p-4 space-y-1">
@@ -44,17 +37,6 @@ export function CandidateForm() {
           <CardTitle className="text-xl font-bold">
             Candidate Information
           </CardTitle>
-          {
-            <Button
-              onClick={goToQuestions}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="Go to Questions"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          }
         </div>
         <CardDescription className="text-sm">
           Enter the candidate details to generate interview questions.
@@ -164,7 +146,7 @@ export function CandidateForm() {
               Generating Questions...
             </>
           ) : (
-            "Generate Interview Questions"
+            "Start the Interview"
           )}
         </Button>
       </CardContent>

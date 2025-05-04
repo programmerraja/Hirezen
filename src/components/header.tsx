@@ -10,12 +10,11 @@ export function Header({ startNewInterview, handlePrint }: HeadersProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mt-4 flex justify-between gap-2 p-2">
+      <div className="flex justify-between gap-3 p-3">
         <Button
-          className="flex-1"
+          className="flex-1 h-10"
           onClick={startNewInterview}
           variant="outline"
-          size="sm"
         >
           Clear All
         </Button>
@@ -24,10 +23,9 @@ export function Header({ startNewInterview, handlePrint }: HeadersProps) {
           <Button
             onClick={handlePrint}
             variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-2 h-10 px-4"
           >
-            <Printer className="h-4 w-4" />
+            <Printer className="h-5 w-5" />
             Print
           </Button>
         )}

@@ -1,4 +1,4 @@
-import { InterviewQuestion } from "./openai";
+import { InterviewQuestion, CandidateInfo } from "./openai";
 
 export interface InterviewData {
   interviewerName: string;
@@ -9,6 +9,7 @@ export interface InterviewData {
   questions: InterviewQuestion[];
   selectionStatus: "Selected" | "Rejected" | "";
   finalFeedback: string;
+  candidateInfo?: CandidateInfo;
 }
 
 const CURRENT_INTERVIEW_KEY = "currentInterview";
@@ -22,6 +23,7 @@ export const saveCurrentInterview = (data: InterviewData): void => {
         yearsOfExperience: data.yearsOfExperience,
         questions: data.questions,
       },
+      candidateInfo: data.candidateInfo,
     };
 
     localStorage.setItem(CURRENT_INTERVIEW_KEY, JSON.stringify(serializedData));

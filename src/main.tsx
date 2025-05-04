@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 
 const rootElement = document.createElement("div");
 
@@ -16,7 +17,7 @@ globalStyles.innerHTML = `
     position: fixed;
     right: 0;
     top: 0;
-    width: 490px;
+    width: 690px;
     height: 100vh;
     overflow: hidden;
     color: white;
@@ -30,7 +31,7 @@ globalStyles.innerHTML = `
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
   }
 
- 
+
 `;
 
 if (
@@ -44,8 +45,10 @@ if (
 createRoot(rootElement!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <App />
-      <Toaster />
+      <TooltipProvider>
+        <App />
+        <Toaster />
+      </TooltipProvider>
     </ThemeProvider>
   </StrictMode>
 );

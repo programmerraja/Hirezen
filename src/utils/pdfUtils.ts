@@ -1,7 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 import { SyncRedactor } from "redact-pii";
 import { jsPDF } from "jspdf";
-import { InterviewQuestion } from "./openai";
+import { InterviewQuestion, CandidateInfo } from "./openai";
 
 import * as PDFWorker from "pdfjs-dist/build/pdf.worker.mjs";
 
@@ -115,6 +115,7 @@ export interface PrintData {
   selectionStatus: "Selected" | "Rejected" | "";
   finalFeedback?: string;
   questions?: InterviewQuestion[];
+  candidateInfo?: CandidateInfo;
 }
 
 export const generatePDF = async (data: PrintData): Promise<void> => {
@@ -173,6 +174,142 @@ export const generatePDF = async (data: PrintData): Promise<void> => {
       const splitNotes = doc.splitTextToSize(data.selectionStatus, 110);
       doc.text(splitNotes, 80, yPos);
       yPos += 10 + (splitNotes.length - 1) * 7;
+    }
+
+    if (data.candidateInfo) {
+      yPos += 10;
+
+      doc.setFontSize(18);
+      doc.text("Candidate Profile", 20, yPos);
+      yPos += 3;
+
+      doc.line(20, yPos, 190, yPos);
+      yPos += 7;
+
+      doc.setFontSize(12);
+
+      if (data.candidateInfo.summary) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Summary:", 20, yPos);
+        doc.setFont("helvetica", "normal");
+
+        const splitSummary = doc.splitTextToSize(
+          data.candidateInfo.summary,
+          170
+        );
+        doc.text(splitSummary, 20, yPos + 7);
+        yPos += splitSummary.length * 7 + 10;
+      }
+
+      if (
+        data.candidateInfo.experience &&
+        data.candidateInfo.experience.length > 0
+      ) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Experience:", 20, yPos);
+        yPos += 7;
+        doc.setFont("helvetica", "normal");
+
+        data.candidateInfo.experience.forEach((exp) => {
+          const splitExp = doc.splitTextToSize(exp, 170);
+          doc.text(splitExp, 20, yPos);
+          yPos += splitExp.length * 7 + 3;
+        });
+        yPos += 5;
+      }
+
+      if (data.candidateInfo.skills && data.candidateInfo.skills.length > 0) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Skills:", 20, yPos);
+        yPos += 7;
+        doc.setFont("helvetica", "normal");
+
+        const skillsText = data.candidateInfo.skills.join(", ");
+        const splitSkills = doc.splitTextToSize(skillsText, 170);
+        doc.text(splitSkills, 20, yPos);
+        yPos += splitSkills.length * 7 + 10;
+      }
+
+      if (
+        data.candidateInfo.education &&
+        data.candidateInfo.education.length > 0
+      ) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Education:", 20, yPos);
+        yPos += 7;
+        doc.setFont("helvetica", "normal");
+
+        data.candidateInfo.education.forEach((edu) => {
+          const splitEdu = doc.splitTextToSize(edu, 170);
+          doc.text(splitEdu, 20, yPos);
+          yPos += splitEdu.length * 7 + 3;
+        });
+        yPos += 5;
+      }
+
+      if (
+        data.candidateInfo.strengths &&
+        data.candidateInfo.strengths.length > 0
+      ) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Key Strengths:", 20, yPos);
+        yPos += 7;
+        doc.setFont("helvetica", "normal");
+
+        data.candidateInfo.strengths.forEach((strength) => {
+          const splitStrength = doc.splitTextToSize(strength, 170);
+          doc.text(splitStrength, 20, yPos);
+          yPos += splitStrength.length * 7 + 3;
+        });
+        yPos += 5;
+      }
+
+      if (
+        data.candidateInfo.areasToExplore &&
+        data.candidateInfo.areasToExplore.length > 0
+      ) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Areas to Explore:", 20, yPos);
+        yPos += 7;
+        doc.setFont("helvetica", "normal");
+
+        data.candidateInfo.areasToExplore.forEach((area) => {
+          const splitArea = doc.splitTextToSize(area, 170);
+          doc.text(splitArea, 20, yPos);
+          yPos += splitArea.length * 7 + 3;
+        });
+        yPos += 10;
+      }
     }
 
     if (data.questions && data.questions.length > 0) {
@@ -240,7 +377,7 @@ export const generatePDF = async (data: PrintData): Promise<void> => {
       doc.setFontSize(12);
       const splitFeedback = doc.splitTextToSize(data.finalFeedback, 170);
       doc.text(splitFeedback, 20, yPos);
-      yPos += splitFeedback.length * 7; // Adjust position based on number of lines
+      yPos += splitFeedback.length * 7;
     }
 
     if (yPos > 250) {
@@ -250,7 +387,6 @@ export const generatePDF = async (data: PrintData): Promise<void> => {
 
     yPos += 10;
 
-    // Save the PDF
     doc.save(`${data.candidateName || "Candidate"}_Interview_Summary.pdf`);
   } catch (error) {
     console.error("Error generating PDF:", error);
