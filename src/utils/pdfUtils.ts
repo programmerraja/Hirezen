@@ -126,266 +126,215 @@ export const generatePDF = async (data: PrintData): Promise<void> => {
       format: "a4",
     });
 
+    const LAYOUT = {
+      margin: 10,
+      pageWidth: 210,
+      pageHeight: 297,
+      lineHeight: 5,
+      sectionSpacing: 8,
+      subsectionSpacing: 4,
+      itemSpacing: 2,
+    };
+
+    const contentWidth = LAYOUT.pageWidth - (LAYOUT.margin * 2);
+    const maxY = LAYOUT.pageHeight - LAYOUT.margin;
+    let currentY = LAYOUT.margin;
+
     doc.setFont("helvetica");
 
-    doc.setFontSize(24);
-    doc.text(data.candidateName, 105, 20, { align: "center" });
+    const addNewPage = () => {
+      doc.addPage();
+      currentY = LAYOUT.margin;
+    };
 
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`${new Date().toLocaleDateString()}`, 105, 28, {
-      align: "center",
+    const checkPageBreak = (requiredSpace: number) => {
+      if (currentY + requiredSpace > maxY) {
+        addNewPage();
+      }
+    };
+
+    const addText = (text: string | string[], x: number, options: {
+      fontSize?: number;
+      fontStyle?: 'normal' | 'bold';
+      align?: 'left' | 'center' | 'right';
+      spacing?: number;
+    } = {}) => {
+      const {
+        fontSize = 12,
+        fontStyle = 'normal',
+        align = 'left',
+        spacing = LAYOUT.lineHeight
+      } = options;
+
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", fontStyle);
+
+      if (Array.isArray(text)) {
+        const totalHeight = text.length * spacing;
+        checkPageBreak(totalHeight);
+
+        text.forEach((line, index) => {
+          const alignX = align === 'center' ? LAYOUT.pageWidth / 2 :
+                        align === 'right' ? LAYOUT.pageWidth - LAYOUT.margin : x;
+          doc.text(line, alignX, currentY, { align });
+          if (index < text.length - 1) currentY += spacing;
+        });
+      } else {
+        const lines = doc.splitTextToSize(text, contentWidth);
+        const totalHeight = lines.length * spacing;
+        checkPageBreak(totalHeight);
+
+        lines.forEach((line: string, index: number) => {
+          const alignX = align === 'center' ? LAYOUT.pageWidth / 2 :
+                        align === 'right' ? LAYOUT.pageWidth - LAYOUT.margin : x;
+          doc.text(line, alignX, currentY, { align });
+          if (index < lines.length - 1) currentY += spacing;
+        });
+      }
+      currentY += spacing;
+    };
+
+    const addSection = (title: string, content: () => void) => {
+      currentY += LAYOUT.sectionSpacing;
+      addText(title, LAYOUT.margin, { fontSize: 16, fontStyle: 'bold' });
+      currentY += LAYOUT.subsectionSpacing;
+      content();
+    };
+
+    const addSubsection = (title: string, content: string | string[]) => {
+      addText(title, LAYOUT.margin, { fontSize: 12, fontStyle: 'bold' });
+      currentY += LAYOUT.itemSpacing;
+      addText(content, LAYOUT.margin, { fontSize: 12 });
+      currentY += LAYOUT.subsectionSpacing;
+    };
+
+    addText(data.candidateName, LAYOUT.margin, {
+      fontSize: 20,
+      fontStyle: 'bold',
+      align: 'center',
+      spacing: 8
     });
 
-    doc.setTextColor(0, 0, 0);
+    addText(new Date().toLocaleDateString(), LAYOUT.margin, {
+      fontSize: 12,
+      align: 'center',
+      spacing: 6
+    });
 
-    doc.setFontSize(18);
-    doc.text("Interview Details", 20, 45);
+    addSection("Interview Details", () => {
+      const details = [
+        `Interviewer: ${data.interviewerName}`,
+        `Candidate: ${data.candidateName}`,
+        `Role: ${data.role}`
+      ];
 
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, 48, 190, 48);
+      if (data.selectionStatus) {
+        details.push(`Status: ${data.selectionStatus}`);
+      }
 
-    doc.setFontSize(12);
-    let yPos = 55;
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Interviewer:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.interviewerName || "N/A", 80, yPos);
-    yPos += 10;
-
-    doc.setFont("helvetica", "bold");
-    // doc.text("Candidate:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.candidateName || "N/A", 80, yPos);
-    yPos += 10;
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Role:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.role || "N/A", 80, yPos);
-    yPos += 10;
-
-    if (data.selectionStatus) {
-      doc.setFont("helvetica", "bold");
-      doc.text("Status:", 20, yPos);
-      doc.setFont("helvetica", "normal");
-
-      const splitNotes = doc.splitTextToSize(data.selectionStatus, 110);
-      doc.text(splitNotes, 80, yPos);
-      yPos += 10 + (splitNotes.length - 1) * 7;
-    }
+      details.forEach(detail => {
+        addText(detail, LAYOUT.margin, { spacing: LAYOUT.lineHeight });
+      });
+    });
 
     if (data.candidateInfo) {
-      yPos += 10;
-
-      doc.setFontSize(18);
-      doc.text("Candidate Profile", 20, yPos);
-      yPos += 3;
-
-      doc.line(20, yPos, 190, yPos);
-      yPos += 7;
-
-      doc.setFontSize(12);
-
-      if (data.candidateInfo.summary) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
+      addSection("Candidate Profile", () => {
+        if (data.candidateInfo!.summary) {
+          addSubsection("Summary", data.candidateInfo!.summary);
         }
 
-        doc.setFont("helvetica", "bold");
-        doc.text("Summary:", 20, yPos);
-        doc.setFont("helvetica", "normal");
-
-        const splitSummary = doc.splitTextToSize(
-          data.candidateInfo.summary,
-          170
-        );
-        doc.text(splitSummary, 20, yPos + 7);
-        yPos += splitSummary.length * 7 + 10;
-      }
-
-      if (
-        data.candidateInfo.experience &&
-        data.candidateInfo.experience.length > 0
-      ) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
+        if (data.candidateInfo!.experience?.length) {
+          addText("Experience:", LAYOUT.margin, { fontStyle: 'bold' });
+          currentY += LAYOUT.itemSpacing;
+          data.candidateInfo!.experience.forEach((exp, index) => {
+            addText(`• ${exp}`, LAYOUT.margin + 5, { spacing: LAYOUT.lineHeight });
+            if (index < data.candidateInfo!.experience!.length - 1) {
+              currentY += LAYOUT.itemSpacing;
+            }
+          });
+          currentY += LAYOUT.subsectionSpacing;
         }
 
-        doc.setFont("helvetica", "bold");
-        doc.text("Experience:", 20, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-
-        data.candidateInfo.experience.forEach((exp) => {
-          const splitExp = doc.splitTextToSize(exp, 170);
-          doc.text(splitExp, 20, yPos);
-          yPos += splitExp.length * 7 + 3;
-        });
-        yPos += 5;
-      }
-
-      if (data.candidateInfo.skills && data.candidateInfo.skills.length > 0) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
+        if (data.candidateInfo!.skills?.length) {
+          addSubsection("Skills", data.candidateInfo!.skills.join(", "));
         }
 
-        doc.setFont("helvetica", "bold");
-        doc.text("Skills:", 20, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-
-        const skillsText = data.candidateInfo.skills.join(", ");
-        const splitSkills = doc.splitTextToSize(skillsText, 170);
-        doc.text(splitSkills, 20, yPos);
-        yPos += splitSkills.length * 7 + 10;
-      }
-
-      if (
-        data.candidateInfo.education &&
-        data.candidateInfo.education.length > 0
-      ) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
+        if (data.candidateInfo!.education?.length) {
+          addText("Education:", LAYOUT.margin, { fontStyle: 'bold' });
+          currentY += LAYOUT.itemSpacing;
+          data.candidateInfo!.education.forEach((edu, index) => {
+            addText(`• ${edu}`, LAYOUT.margin + 5, { spacing: LAYOUT.lineHeight });
+            if (index < data.candidateInfo!.education!.length - 1) {
+              currentY += LAYOUT.itemSpacing;
+            }
+          });
+          currentY += LAYOUT.subsectionSpacing;
         }
 
-        doc.setFont("helvetica", "bold");
-        doc.text("Education:", 20, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-
-        data.candidateInfo.education.forEach((edu) => {
-          const splitEdu = doc.splitTextToSize(edu, 170);
-          doc.text(splitEdu, 20, yPos);
-          yPos += splitEdu.length * 7 + 3;
-        });
-        yPos += 5;
-      }
-
-      if (
-        data.candidateInfo.strengths &&
-        data.candidateInfo.strengths.length > 0
-      ) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Key Strengths:", 20, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-
-        data.candidateInfo.strengths.forEach((strength) => {
-          const splitStrength = doc.splitTextToSize(strength, 170);
-          doc.text(splitStrength, 20, yPos);
-          yPos += splitStrength.length * 7 + 3;
-        });
-        yPos += 5;
-      }
-
-      if (
-        data.candidateInfo.areasToExplore &&
-        data.candidateInfo.areasToExplore.length > 0
-      ) {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Areas to Explore:", 20, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-
-        data.candidateInfo.areasToExplore.forEach((area) => {
-          const splitArea = doc.splitTextToSize(area, 170);
-          doc.text(splitArea, 20, yPos);
-          yPos += splitArea.length * 7 + 3;
-        });
-        yPos += 10;
-      }
-    }
-
-    if (data.questions && data.questions.length > 0) {
-      yPos += 10;
-
-      doc.setFontSize(18);
-      doc.text("Interview Questions", 20, yPos);
-      yPos += 3;
-
-      doc.line(20, yPos, 190, yPos);
-      yPos += 7;
-
-      doc.setFontSize(12);
-
-      data.questions.forEach((q) => {
-        if (yPos > 250) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFont("helvetica", "normal");
-
-        const splitQuestion = doc.splitTextToSize(q.question, 170);
-        doc.text(splitQuestion, 20, yPos + 7);
-        yPos += splitQuestion.length * 7 + 7;
-        if (q.code) {
-          doc.text(q.code, 20, yPos + 7);
-          yPos += 30;
-        }
-
-        if (q.notes) {
-          if (yPos > 250) {
-            doc.addPage();
-            yPos = 20;
-          }
-
-          doc.setFont("helvetica", "bold");
-          doc.text("Feedback:", 20, yPos);
-          doc.setFont("helvetica", "normal");
-
-          const splitNotes = doc.splitTextToSize(q.notes, 170);
-          doc.text(splitNotes, 20, yPos + 7);
-          yPos += splitNotes.length * 7 + 10;
-        } else {
-          yPos += 10;
+        if (data.candidateInfo!.projects?.length) {
+          addText("Projects:", LAYOUT.margin, { fontStyle: 'bold' });
+          currentY += LAYOUT.itemSpacing;
+          data.candidateInfo!.projects.forEach((project, index) => {
+            addText(`• ${project}`, LAYOUT.margin + 5, { spacing: LAYOUT.lineHeight });
+            if (index < data.candidateInfo!.projects!.length - 1) {
+              currentY += LAYOUT.itemSpacing;
+            }
+          });
+          currentY += LAYOUT.subsectionSpacing;
         }
       });
     }
 
+    if (data.questions?.length) {
+      addSection("Interview Questions", () => {
+        data.questions!.forEach((question, index) => {
+          const questionLines = doc.splitTextToSize(question.question.trim(), contentWidth);
+          const codeLines = question.code ? doc.splitTextToSize(question.code.trim(), contentWidth) : [];
+          const notesLines = question.notes ? doc.splitTextToSize(question.notes.trim(), contentWidth) : [];
+
+          const requiredSpace =
+            (questionLines.length * LAYOUT.lineHeight) +
+            (codeLines.length * LAYOUT.lineHeight) +
+            (notesLines.length * LAYOUT.lineHeight) +
+            LAYOUT.subsectionSpacing * 3;
+
+          checkPageBreak(requiredSpace);
+
+          addText(`Q${index + 1}: ${question.question.trim()}`, LAYOUT.margin, {
+            fontStyle: 'bold',
+            spacing: LAYOUT.lineHeight
+          });
+
+          if (question.code) {
+            currentY += LAYOUT.itemSpacing;
+            doc.setFontSize(10);
+            doc.setFont("courier", "normal");
+            const codeLines = doc.splitTextToSize(question.code.trim(), contentWidth);
+            codeLines.forEach((line: string) => {
+              doc.text(line, LAYOUT.margin + 5, currentY);
+              currentY += 4;
+            });
+            currentY += LAYOUT.itemSpacing;
+          }
+
+       
+          if (question.notes) {
+            addText("Feedback:", LAYOUT.margin, { fontStyle: 'bold', spacing: LAYOUT.lineHeight });
+            addText(question.notes.trim(), LAYOUT.margin + 5, { spacing: LAYOUT.lineHeight });
+          }
+
+          if (index < data.questions!.length - 1) {
+            currentY += LAYOUT.sectionSpacing;
+          }
+        });
+      });
+    }
+
     if (data.finalFeedback) {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      yPos += 10;
-
-      doc.setFontSize(18);
-      doc.text("Final Feedback", 20, yPos);
-      yPos += 3;
-
-      doc.line(20, yPos, 190, yPos);
-      yPos += 7;
-
-      doc.setFontSize(12);
-      const splitFeedback = doc.splitTextToSize(data.finalFeedback, 170);
-      doc.text(splitFeedback, 20, yPos);
-      yPos += splitFeedback.length * 7;
+      addSection("Final Feedback", () => {
+        addText(data.finalFeedback!, LAYOUT.margin, { spacing: LAYOUT.lineHeight });
+      });
     }
-
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    yPos += 10;
 
     doc.save(`${data.candidateName || "Candidate"}_Interview_Summary.pdf`);
   } catch (error) {
