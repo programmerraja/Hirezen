@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { InterviewQuestion } from "@/utils/openai";
 import {
-  ArrowLeft,
+  // ArrowLeft,
   Plus,
   Edit,
   X,
@@ -25,7 +25,7 @@ import {
 export function InterviewQuestions() {
   const {
     interviewData,
-    setPage,
+    // setPage,
     regenerateQuestionById,
     isLoading,
   } = useInterview();
