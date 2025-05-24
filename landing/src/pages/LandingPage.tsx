@@ -324,11 +324,11 @@ function StepCard({ number, title, description }: StepCardProps) {
   );
 }
 
-interface TestimonialCardProps {
-  quote: string;
-  author: string;
-  role: string;
-}
+// interface TestimonialCardProps {
+//   quote: string;
+//   author: string;
+//   role: string;
+// }
 
 // function TestimonialCard({ quote, author, role }: TestimonialCardProps) {
 //   return (

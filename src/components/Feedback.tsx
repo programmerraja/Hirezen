@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X as XIcon } from "lucide-react";
 import { useInterview } from "@/contexts/InterviewContext";
-import { SelectionStatus } from "@/contexts/InterviewContext";
 
 export function Feedback() {
   const { interviewData, updateInterviewData } = useInterview();

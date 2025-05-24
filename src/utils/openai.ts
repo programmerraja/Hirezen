@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
+import { getLLMConfig } from "./llmConfig";
 
 export interface InterviewQuestion {
   question: string;
@@ -19,16 +20,49 @@ export interface CandidateInfo {
   summary: string;
 }
 
-// const openai = new OpenAI({
-//   baseURL: "https://models.inference.ai.azure.com",
-//   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-//   dangerouslyAllowBrowser: true,
-// });
+async function createLLMClient() {
+  try {
+    const config = await getLLMConfig();
 
-const openai = createOpenAI({
-  baseURL: "https://models.inference.ai.azure.com",
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-});
+    switch (config.provider) {
+      case "openai":
+        return {
+          client: createOpenAI({
+            baseURL: config.baseURL || "https://api.openai.com/v1",
+            apiKey: config.apiKey,
+          }),
+          model: config.model || "gpt-4o",
+        };
+
+      case "azure":
+        return {
+          client: createOpenAI({
+            baseURL: config.baseURL || "https://models.inference.ai.azure.com",
+            apiKey: config.apiKey,
+          }),
+          model: config.model || "gpt-4o",
+        };
+
+      default:
+        return {
+          client: createOpenAI({
+            baseURL: "https://models.inference.ai.azure.com",
+            apiKey: import.meta.env.VITE_OPENAI_API_KEY || "",
+          }),
+          model: "gpt-4o",
+        };
+    }
+  } catch (error) {
+    console.error("Error creating LLM client:", error);
+    return {
+      client: createOpenAI({
+        baseURL: "https://models.inference.ai.azure.com",
+        apiKey: import.meta.env.VITE_OPENAI_API_KEY || "",
+      }),
+      model: "gpt-4o",
+    };
+  }
+}
 
 export async function extractCandidateInfo(
   resumeText: string,
@@ -57,8 +91,10 @@ export async function extractCandidateInfo(
       ${resumeText}
     `;
 
+    const { client, model } = await createLLMClient();
+
     const response = await generateObject({
-      model: openai("gpt-4o", { structuredOutputs: true }),
+      model: client(model, { structuredOutputs: true }),
       schemaName: "candidateInfo",
       schemaDescription:
         "Structured information extracted from a candidate's resume",
@@ -91,7 +127,9 @@ export async function generateInterviewQuestions(
   // return JSON.parse(
   //   '{"questions":[{"question":"Given the following React component, what will be rendered on the screen?","code":"function App() {\\n  const [count, setCount] = React.useState(0);\\n  React.useEffect(() =\u003e {\\n    setCount(count + 1);\\n  }, []);\\n  return \u003cdiv\u003e{count}\u003c/div\u003e;\\n}"},{"question":"How would you optimize a React component that re-renders unnecessarily due to unchanged props?","code":""},{"question":"What will be the output of the following code snippet?","code":"function Parent() {\\n  const [value, setValue] = React.useState(0);\\n  return (\\n    \u003cdiv\u003e\\n      \u003cChild value={value} /\u003e\\n      \u003cbutton onClick={() =\u003e setValue(value + 1)}\u003eIncrement\u003c/button\u003e\\n    \u003c/div\u003e\\n  );\\n}\\nfunction Child({ value }) {\\n  React.useEffect(() =\u003e {\\n    console.log(\'Child rendered\');\\n  });\\n  return \u003cdiv\u003e{value}\u003c/div\u003e;\\n}"},{"question":"How would you implement a custom hook in React to fetch data from an API?","code":""},{"question":"What will be the output of the following code?","code":"function App() {\\n  const [text, setText] = React.useState(\'\');\\n  const handleChange = (e) =\u003e {\\n    setText(e.target.value);\\n  };\\n  return (\\n    \u003cdiv\u003e\\n      \u003cinput value={text} onChange={handleChange} /\u003e\\n      \u003cp\u003e{text}\u003c/p\u003e\\n    \u003c/div\u003e\\n  );\\n}"},{"question":"How would you handle state management in a React application with multiple components sharing the same state?","code":""},{"question":"What will be the output of the following code?","code":"function App() {\\n  const [count, setCount] = React.useState(0);\\n  React.useEffect(() =\u003e {\\n    const interval = setInterval(() =\u003e {\\n      setCount((prevCount) =\u003e prevCount + 1);\\n    }, 1000);\\n    return () =\u003e clearInterval(interval);\\n  }, []);\\n  return \u003cdiv\u003e{count}\u003c/div\u003e;\\n}"},{"question":"How would you implement a lazy-loaded component in React?","code":""},{"question":"What will be the output of the following code?","code":"function App() {\\n  const [visible, setVisible] = React.useState(false);\\n  return (\\n    \u003cdiv\u003e\\n      \u003cbutton onClick={() =\u003e setVisible(!visible)}\u003eToggle\u003c/button\u003e\\n      {visible \u0026\u0026 \u003cp\u003eHello, World!\u003c/p\u003e}\\n    \u003c/div\u003e\\n  );\\n}"},{"question":"How would you use React Context to manage a theme (light/dark) across an application?","code":""}]}'
   // ).questions;
+
   try {
+    const { client, model } = await createLLMClient();
     const prompt = `
       You are an expert technical interviewer. Your task is to generate relevant interview questions based on a candidate's resume and the role they're applying for.
 
@@ -111,7 +149,7 @@ export async function generateInterviewQuestions(
     `;
 
     const response = await generateObject({
-      model: openai("gpt-4o", { structuredOutputs: true }),
+      model: client(model, { structuredOutputs: true }),
       schemaName: "interviewQuestions",
       schemaDescription:
         "A list of 10 question if the question is code based include code property else ingore",
@@ -140,6 +178,7 @@ export async function regenerateQuestion(
   customPrompt?: string
 ): Promise<InterviewQuestion> {
   try {
+    const { client, model } = await createLLMClient();
     const prompt = `
       You are an expert technical interviewer. Your task is to regenerate or improve an existing interview question.
 
@@ -157,11 +196,11 @@ export async function regenerateQuestion(
 
       Please generate a new, improved version of this question that is more relevant, clearer, or more challenging.
       If the original question includes code, please provide new code as well.
-      
+
     `;
 
     const response = await generateObject({
-      model: openai("gpt-4o", { structuredOutputs: true }),
+      model: client(model, { structuredOutputs: true }),
       schemaName: "regeneratedQuestion",
       schemaDescription: "A regenerated interview question",
       schema: z.object({

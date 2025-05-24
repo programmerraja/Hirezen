@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CandidateInfo } from "@/components/CandidateInfo";
 import { EmptyQuestions } from "@/components/EmptyQuestions";
 import { Feedback } from "@/components/Feedback";
+import { ResizeHandle } from "@/components/ResizeHandle";
 import { FileText, User, MessageSquare, ClipboardCheck } from "lucide-react";
 
 function AppContent() {
@@ -41,7 +42,9 @@ function AppContent() {
       reactApp.style.overflowY = "hidden";
     } else {
       reactApp.style.height = "100vh";
-      reactApp.style.width = "490px";
+      // Restore to the saved width instead of hardcoded value
+      const currentWidth = window.getExtensionWidth ? window.getExtensionWidth() : 690;
+      reactApp.style.width = `${currentWidth}px`;
       reactApp.style.overflowY = "scroll";
     }
   };
@@ -70,7 +73,8 @@ function AppContent() {
   // };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background w-full overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background w-full overflow-hidden relative">
+      <ResizeHandle />
       <Header startNewInterview={startNewInterview} handlePrint={handlePrint} />
       <main className="flex-1 w-full py-5 px-4">
         <div className="flex flex-col items-center w-full">
