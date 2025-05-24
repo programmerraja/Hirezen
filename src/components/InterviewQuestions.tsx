@@ -171,7 +171,7 @@ export function InterviewQuestions() {
     setEditedQuestion(newQuestion);
   }, [questionsList]);
 
-  const goBackToCandidateInfo = () => setPage(1);
+  // const goBackToCandidateInfo = () => setPage(1);
 
   return (
     <div className="w-full h-[85vh] relative">
@@ -195,14 +195,14 @@ export function InterviewQuestions() {
         <div className="sticky top-0 bg-background z-10 flex justify-between items-center p-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              {/* <Button
                 onClick={goBackToCandidateInfo}
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
               >
                 <ArrowLeft className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </TooltipTrigger>
             <TooltipContent>
               <p>Back to Candidate Info</p>

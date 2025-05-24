@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Printer, Settings, Maximize2, Minimize2, Monitor } from "lucide-react";
+// Maximize2, Minimize2, Monitor
+import { Printer, Settings,  } from "lucide-react";
 import { SettingsModal } from "@/components/SettingsModal";
 
 interface HeadersProps {
@@ -12,20 +13,20 @@ export function Header({ startNewInterview, handlePrint }: HeadersProps) {
   const [showSettings, setShowSettings] = useState(false);
 
   // Width control functions
-  const setWidth = (width: number) => {
-    if (window.updateExtensionWidth) {
-      window.updateExtensionWidth(width);
-    }
-  };
+  // const setWidth = (width: number) => {
+  //   if (window.updateExtensionWidth) {
+  //     window.updateExtensionWidth(width);
+  //   }
+  // };
 
-  const getConstraints = () => {
-    if (window.getExtensionConstraints) {
-      return window.getExtensionConstraints();
-    }
-    return { MIN_WIDTH: 300, MAX_WIDTH: 1200, DEFAULT_WIDTH: 690 };
-  };
+  // const getConstraints = () => {
+  //   if (window.getExtensionConstraints) {
+  //     return window.getExtensionConstraints();
+  //   }
+  //   return { MIN_WIDTH: 300, MAX_WIDTH: 1200, DEFAULT_WIDTH: 690 };
+  // };
 
-  const constraints = getConstraints();
+  // const constraints = getConstraints();
 
   return (
     <>
