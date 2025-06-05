@@ -209,7 +209,7 @@ export function InterviewQuestions() {
             </TooltipContent>
           </Tooltip>
         </div>
-        <div className="flex flex-col gap-6 p-4 w-full max-w-[490px]">
+        <div className="flex flex-col gap-6 p-4 w-full">
           {questionsList &&
             questionsList.map((q: InterviewQuestion, index: number) => (
               <div
